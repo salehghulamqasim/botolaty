@@ -8,8 +8,8 @@ import MatchCard from './MatchCard';
 import { Match } from '@/types/tournament';
 
 export default function BracketTree() {
-  const currentTournament = useTournamentStore((s) => s.currentTournament);
-  const viewMode = useTournamentStore((s) => s.viewMode);
+  const currentTournament = useTournamentStore((s) => s.getActiveTournament());
+  const accessRole = useTournamentStore((s) => s.accessRole);
   const { t } = useI18n();
 
   // ─── Mobile: active round filter ───
@@ -27,7 +27,7 @@ export default function BracketTree() {
     );
   }
 
-  const isAdmin = viewMode === 'admin';
+  const isAdmin = accessRole === 'admin';
   const totalRounds = Math.log2(currentTournament.capacity);
 
   // Group matches by round

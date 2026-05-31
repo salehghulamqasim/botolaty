@@ -7,8 +7,8 @@ import RecentResults from '@/components/standings/RecentResults';
 
 export default function StandingsPage() {
   const { t } = useI18n();
-  const currentTournament = useTournamentStore((s) => s.currentTournament);
-  const viewMode = useTournamentStore((s) => s.viewMode);
+  const currentTournament = useTournamentStore((s) => s.getActiveTournament());
+  const accessRole = useTournamentStore((s) => s.accessRole);
 
   return (
     <div className="flex flex-col gap-6 pb-16 md:pb-8">

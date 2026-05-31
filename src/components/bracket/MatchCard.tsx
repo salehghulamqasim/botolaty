@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Match } from '@/types/tournament';
 import { useTournamentStore } from '@/lib/tournamentStore';
 import { useI18n } from '@/i18n';
@@ -13,10 +13,21 @@ interface Props {
 }
 
 export default function MatchCard({ match, isAdmin, index = 0 }: Props) {
-  const updateMatchScore = useTournamentStore((s) => s.updateMatchScore);
+  const confirmMatchScore = useTournamentStore((s) => s.confirmMatchScore);
   const setMatchStatus = useTournamentStore((s) => s.setMatchStatus);
   const { t } = useI18n();
-  const [hovered, setHovered] = useState(false);
+
+  // ─── Local pending scores before confirm ───
+  const [pendingA, setPendingA] = useState<number | null>(match.scoreA);
+  const [pendingB, setPendingB] = useState<number | null>(match.scoreB);
+  const [saved, setSaved] = useState(false);
+
+  // Sync when match changes externally (e.g. switch tournaments)
+  useEffect(() => {
+    setPendingA(match.scoreA);
+    setPendingB(match.scoreB);
+    setSaved(false);
+  }, [match.id, match.scoreA, match.scoreB]);
 
   const isLive = match.status === 'live';
   const isCompleted = match.status === 'completed';
@@ -28,38 +39,45 @@ export default function MatchCard({ match, isAdmin, index = 0 }: Props) {
   const hasTeams = !!(match.teamA && match.teamB);
   const isTBD = !match.teamA || !match.teamB;
 
-  const handleScoreChange = (team: 'A' | 'B', value: string) => {
-    const num = parseInt(value) || 0;
-    if (num < 0 || num > 99) return;
-    const scoreA = team === 'A' ? num : (match.scoreA ?? 0);
-    const scoreB = team === 'B' ? num : (match.scoreB ?? 0);
-    updateMatchScore(match.id, scoreA, scoreB);
+  // Only show winner/loser when explicitly completed
+  const showWinner = isCompleted && !!match.winnerId;
+  const winnerIsA = showWinner && match.winnerId === match.teamA?.id;
+  const winnerIsB = showWinner && match.winnerId === match.teamB?.id;
+
+  // Confirm is available when both scores are filled and match is live/upcoming
+  const bothPending = pendingA !== null && pendingB !== null;
+  const hasChanges = pendingA !== match.scoreA || pendingB !== match.scoreB;
+  const canConfirm = isAdmin && hasTeams && !hasBye && !isTBD && bothPending && !isCompleted;
+  const showConfirm = canConfirm && hasChanges;
+
+  const handleConfirm = () => {
+    if (!canConfirm || pendingA === null || pendingB === null) return;
+    confirmMatchScore(match.id, pendingA, pendingB);
+    setSaved(true);
   };
 
-  // Border + glow based on status
+  const isReadOnly = !isAdmin;
+
+  // Border styling
   const borderClass = isLive
     ? 'border-primary/60 ring-1 ring-primary/40 shadow-lg shadow-primary/10'
     : isCompleted
     ? 'border-outline-variant/20'
     : 'border-outline-variant/30';
 
-  const cardGlow = isLive ? 'animate-card-pulse' : '';
-
-  // Staggered entrance delay
   const staggerDelay = `${index * 80}ms`;
 
   return (
     <div
       className={`bg-surface-container-low rounded-xl border shadow-sm relative overflow-hidden
-        ${borderClass} ${cardGlow}
+        ${borderClass}
+        ${isLive ? 'animate-card-pulse' : ''}
         transition-all duration-300 ease-out
-        hover:border-primary/50 hover:shadow-md hover:shadow-primary/5
+        hover:border-primary/40 hover:shadow-md
         animate-card-enter`}
       style={{ animationDelay: staggerDelay }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
     >
-      {/* Top accent bar — animated gradient for live */}
+      {/* Top accent bar */}
       <div
         className={`absolute top-0 left-0 w-full h-1 rounded-t-xl transition-all duration-500
           ${isLive ? 'bg-gradient-to-r from-primary via-emerald-300 to-primary animate-shimmer' : ''}
@@ -67,8 +85,8 @@ export default function MatchCard({ match, isAdmin, index = 0 }: Props) {
           ${isUpcoming && !isLive ? 'bg-gradient-to-r from-outline-variant/40 to-transparent' : ''}`}
       />
 
-      <div className="p-3 pt-4 flex flex-col gap-2">
-        {/* Header: status badge + match number */}
+      <div className="p-3 pt-4 flex flex-col gap-3">
+        {/* Header row: status + match number */}
         <div className="flex justify-between items-center text-xs">
           <StatusBadge status={match.status} />
           <span className="text-on-surface-variant/60 text-[11px] tabular-nums tracking-wider">
@@ -76,103 +94,124 @@ export default function MatchCard({ match, isAdmin, index = 0 }: Props) {
           </span>
         </div>
 
-        {/* Team A */}
-        <TeamRow
-          team={match.teamA}
-          score={match.scoreA}
-          isWinner={match.winnerId === match.teamA?.id}
-          isLoser={!!match.winnerId && match.winnerId !== match.teamA?.id}
-          isAdmin={isAdmin}
-          canScore={hasTeams && !isByeA}
-          isBye={isByeA}
-          isCompleted={isCompleted}
-          onChange={(v) => handleScoreChange('A', v)}
-          byeLabel={t.bracket.bye}
-        />
+        {/* ─── Grid scoring layout ─── */}
+        <div className="grid grid-cols-12 items-center gap-1.5">
+          {/* Team A: cols 1-5 */}
+          <TeamBlock
+            team={match.teamA}
+            score={pendingA}
+            isWinner={winnerIsA}
+            isLoser={isCompleted && showWinner && !winnerIsA}
+            isBye={isByeA}
+            isCompleted={isCompleted}
+            isReadOnly={isReadOnly || isByeA}
+            onChange={(v) => { setPendingA(v); setSaved(false); }}
+            byeLabel={t.bracket.bye}
+          />
 
-        {/* VS divider */}
-        <div className="flex items-center gap-2 px-1">
-          <div className="flex-1 h-px bg-outline-variant/30" />
-          <span className="text-[10px] font-extrabold text-outline-variant/50 uppercase tracking-[0.2em]">
-            vs
-          </span>
-          <div className="flex-1 h-px bg-outline-variant/30" />
+          {/* VS divider: cols 6-7 */}
+          <div className="col-span-2 flex flex-col items-center justify-center gap-0.5">
+            <span className="text-[9px] font-extrabold text-outline-variant/50 uppercase tracking-[0.15em] leading-none">
+              VS
+            </span>
+            <div className="w-full h-px bg-outline-variant/20" />
+          </div>
+
+          {/* Team B: cols 8-12 */}
+          <TeamBlock
+            team={match.teamB}
+            score={pendingB}
+            isWinner={winnerIsB}
+            isLoser={isCompleted && showWinner && !winnerIsB}
+            isBye={isByeB}
+            isCompleted={isCompleted}
+            isReadOnly={isReadOnly || isByeB}
+            onChange={(v) => { setPendingB(v); setSaved(false); }}
+            byeLabel={t.bracket.bye}
+          />
         </div>
 
-        {/* Team B */}
-        <TeamRow
-          team={match.teamB}
-          score={match.scoreB}
-          isWinner={match.winnerId === match.teamB?.id}
-          isLoser={!!match.winnerId && match.winnerId !== match.teamB?.id}
-          isAdmin={isAdmin}
-          canScore={hasTeams && !isByeB}
-          isBye={isByeB}
-          isCompleted={isCompleted}
-          onChange={(v) => handleScoreChange('B', v)}
-          byeLabel={t.bracket.bye}
-        />
+        {/* ─── Confirm & Save button ─── */}
+        {showConfirm && (
+          <button
+            onClick={handleConfirm}
+            className="w-full py-2.5 rounded-xl text-sm font-bold
+              bg-primary/15 text-primary
+              hover:bg-primary/25 hover:shadow-lg hover:shadow-primary/10
+              active:scale-[0.98]
+              transition-all duration-200
+              border border-primary/30
+              flex items-center justify-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Confirm & Save Match Score
+          </button>
+        )}
 
-        {/* Action buttons */}
+        {/* Saved confirmation flash */}
+        {saved && !hasChanges && isCompleted && (
+          <div className="text-center text-xs text-primary/70 font-semibold animate-card-enter">
+            ✓ Score saved · Winner advanced
+          </div>
+        )}
+
+        {/* ─── Action buttons ─── */}
         {isAdmin && hasTeams && !hasBye && !isTBD && (
-          <div className="flex gap-2 mt-1">
+          <div className="flex gap-2 mt-0.5">
             {isUpcoming && (
               <button
                 onClick={() => setMatchStatus(match.id, 'live')}
-                className="flex-1 text-xs py-2 px-3 rounded-lg
+                className="flex-1 text-xs py-2.5 px-3 rounded-xl
                   bg-tertiary-container/10 text-tertiary
-                  hover:bg-tertiary-container/25 hover:shadow-md hover:shadow-tertiary/10
+                  hover:bg-tertiary-container/25 hover:shadow-md
                   active:scale-[0.97]
                   font-semibold transition-all duration-200
-                  border border-tertiary/20"
+                  border border-tertiary/15
+                  flex items-center justify-center gap-1.5"
               >
-                <span className="flex items-center justify-center gap-1.5">
-                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                  {t.bracket.start}
-                </span>
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+                {t.bracket.start}
               </button>
             )}
             {isLive && (
               <button
                 onClick={() => setMatchStatus(match.id, 'completed')}
-                className="flex-1 text-xs py-2 px-3 rounded-lg
+                className="flex-1 text-xs py-2.5 px-3 rounded-xl
                   bg-primary-container/10 text-primary
-                  hover:bg-primary-container/25 hover:shadow-md hover:shadow-primary/10
+                  hover:bg-primary-container/25 hover:shadow-md
                   active:scale-[0.97]
                   font-semibold transition-all duration-200
-                  border border-primary/20"
+                  border border-primary/15
+                  flex items-center justify-center gap-1.5"
               >
-                <span className="flex items-center justify-center gap-1.5">
-                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z" />
-                  </svg>
-                  {t.bracket.finish}
-                </span>
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z" />
+                </svg>
+                {t.bracket.finish}
               </button>
             )}
           </div>
         )}
 
-        {/* Show BYE badge when match is a walkover */}
+        {/* BYE auto-advance */}
         {hasBye && isAdmin && !isCompleted && (
           <button
             onClick={() => {
-              if (isByeA && match.teamB) {
-                updateMatchScore(match.id, 0, 3);
-              } else if (isByeB && match.teamA) {
-                updateMatchScore(match.id, 3, 0);
-              }
+              if (isByeA && match.teamB) confirmMatchScore(match.id, 0, 3);
+              else if (isByeB && match.teamA) confirmMatchScore(match.id, 3, 0);
             }}
-            className="text-xs py-1.5 px-3 rounded-lg
-              bg-surface-container-highest/50 text-on-surface-variant
+            className="text-xs py-2 rounded-xl
+              bg-surface-container-highest/40 text-on-surface-variant
               hover:bg-surface-container-highest hover:text-primary
               active:scale-[0.97]
               font-medium transition-all duration-200
               border border-outline-variant/20 hover:border-primary/30"
           >
-            Advance winner automatically
+            {t.bracket.bye} — advance winner automatically
           </button>
         )}
       </div>
@@ -180,17 +219,18 @@ export default function MatchCard({ match, isAdmin, index = 0 }: Props) {
   );
 }
 
-/* ─── Team Row Sub-Component ─── */
+/* ═══════════════════════════════════════════
+   TeamBlock — avatar + name + score input
+   ═══════════════════════════════════════════ */
 
-function TeamRow({
+function TeamBlock({
   team,
   score,
   isWinner,
   isLoser,
-  isAdmin,
-  canScore,
   isBye,
   isCompleted,
+  isReadOnly,
   onChange,
   byeLabel,
 }: {
@@ -198,11 +238,10 @@ function TeamRow({
   score: number | null;
   isWinner: boolean;
   isLoser: boolean;
-  isAdmin: boolean;
-  canScore: boolean;
   isBye: boolean;
   isCompleted: boolean;
-  onChange: (v: string) => void;
+  isReadOnly: boolean;
+  onChange: (v: number | null) => void;
   byeLabel: string;
 }) {
   const isTBD = !team;
@@ -210,68 +249,74 @@ function TeamRow({
 
   return (
     <div
-      className={`flex items-center justify-between p-2.5 rounded-lg transition-all duration-300
-        ${isBye ? 'opacity-40 bg-surface-variant/30' : ''}
-        ${isWinner ? 'bg-surface-container-high border border-primary/30 shadow-sm shadow-primary/5' : ''}
+      className={`col-span-5 flex items-center gap-2 p-2.5 rounded-xl transition-all duration-300
+        ${isBye ? 'opacity-40 bg-surface-variant/20' : ''}
+        ${isWinner ? 'bg-primary/10 border border-primary/30 shadow-sm shadow-primary/5' : ''}
         ${isLoser && !isBye ? 'bg-surface-container opacity-50' : ''}
-        ${!isWinner && !isLoser && !isBye && !isTBD ? 'bg-surface-container hover:bg-surface-container-high' : ''}
+        ${!isWinner && !isLoser && !isBye && !isTBD ? 'bg-surface-container' : ''}
         ${isTBD ? 'bg-surface-container-lowest/50' : ''}`}
     >
-      {/* Left: avatar + name */}
-      <div className="flex items-center gap-2.5 min-w-0 flex-1 mr-2">
-        <div
-          className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0
-            transition-all duration-300
-            ${isBye ? 'bg-surface-variant text-on-surface-variant/40' : ''}
-            ${isWinner ? 'bg-primary-container text-primary scale-110 ring-2 ring-primary/30' : ''}
-            ${isLoser && !isBye ? 'bg-surface-variant text-on-surface-variant/50' : ''}
-            ${!isWinner && !isLoser && !isBye && !isTBD ? 'bg-primary-container/70 text-primary' : ''}
-            ${isTBD ? 'bg-surface-variant text-on-surface-variant/40' : ''}`}
-        >
-          {isBye ? (
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-            </svg>
-          ) : (
-            name.charAt(0).toUpperCase()
-          )}
-        </div>
+      {/* Avatar */}
+      <div
+        className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0
+          transition-all duration-300
+          ${isBye ? 'bg-surface-variant text-on-surface-variant/40' : ''}
+          ${isWinner ? 'bg-primary-container text-primary scale-110 ring-2 ring-primary/30' : ''}
+          ${isLoser && !isBye ? 'bg-surface-variant text-on-surface-variant/50' : ''}
+          ${!isWinner && !isLoser && !isBye && !isTBD ? 'bg-primary-container/70 text-primary' : ''}
+          ${isTBD ? 'bg-surface-variant text-on-surface-variant/40' : ''}`}
+      >
+        {isBye ? (
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+          </svg>
+        ) : (
+          name.charAt(0).toUpperCase()
+        )}
+      </div>
+
+      {/* Name + Score vertically stacked on small screens, row on larger */}
+      <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
         <span
           className={`text-sm font-semibold truncate transition-all duration-300
-            ${isWinner ? 'text-on-surface font-bold' : ''}
-            ${isLoser && !isBye ? 'text-on-surface-variant' : ''}
+            ${isWinner ? 'text-primary font-bold' : ''}
+            ${isLoser && !isBye ? 'text-on-surface-variant/60' : ''}
             ${!isWinner && !isLoser && !isBye && !isTBD ? 'text-on-surface' : ''}
-            ${isTBD || isBye ? 'text-on-surface-variant/60' : ''}`}
+            ${isTBD || isBye ? 'text-on-surface-variant/50' : ''}`}
         >
           {name}
         </span>
-      </div>
 
-      {/* Right: score or placeholder */}
-      {isAdmin && canScore && !isBye ? (
-        <input
-          type="number"
-          min={0}
-          max={99}
-          value={score ?? ''}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-11 h-9 score-input text-sm shrink-0 rounded-lg
-            transition-all duration-200
-            focus:ring-2 focus:ring-primary/40 focus:border-primary
-            hover:border-secondary/50"
-          placeholder="-"
-        />
-      ) : (
-        <span
-          className={`text-lg font-extrabold font-[Sora] tabular-nums shrink-0 min-w-[1.5rem] text-right
-            transition-all duration-300
-            ${isCompleted && isWinner ? 'text-primary scale-110' : ''}
-            ${isCompleted && isLoser ? 'text-on-surface-variant/50' : ''}
-            ${!isCompleted ? 'text-on-surface-variant' : ''}`}
-        >
-          {score ?? '-'}
-        </span>
-      )}
+        {/* Score field */}
+        {isReadOnly || isCompleted ? (
+          <span
+            className={`text-lg font-extrabold font-[Sora] tabular-nums shrink-0 transition-all duration-300
+              ${isWinner ? 'text-primary scale-110' : ''}
+              ${isLoser ? 'text-on-surface-variant/50' : ''}
+              ${!isWinner && !isLoser ? 'text-on-surface-variant' : ''}`}
+          >
+            {score ?? '-'}
+          </span>
+        ) : (
+          <input
+            type="number"
+            min={0}
+            max={99}
+            value={score ?? ''}
+            onChange={(e) => {
+              const v = e.target.value;
+              const n = v === '' ? null : Math.max(0, Math.min(99, parseInt(v) || 0));
+              onChange(n);
+            }}
+            className="w-14 h-10 score-input text-base shrink-0 rounded-xl
+              transition-all duration-200
+              focus:ring-2 focus:ring-primary/40 focus:border-primary
+              hover:border-secondary/50
+              font-extrabold"
+            placeholder="-"
+          />
+        )}
+      </div>
     </div>
   );
 }

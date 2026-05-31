@@ -4,12 +4,14 @@ import { useTournamentStore } from '@/lib/tournamentStore';
 import { useI18n } from '@/i18n';
 
 export default function VisibilityToggle() {
-  const { currentTournament, toggleVisibility, viewMode } = useTournamentStore();
+  const active = useTournamentStore((s) => s.getActiveTournament());
+  const toggleVisibility = useTournamentStore((s) => s.toggleVisibility);
+  const accessRole = useTournamentStore((s) => s.accessRole);
   const { t } = useI18n();
 
-  if (!currentTournament || viewMode === 'spectator') return null;
+  if (!active || accessRole !== 'admin') return null;
 
-  const isPublic = currentTournament.isPublic;
+  const isPublic = active.isPublic;
 
   return (
     <button

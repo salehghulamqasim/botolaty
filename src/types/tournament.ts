@@ -1,20 +1,21 @@
 // ──── Core Domain Types ────
 
 export type Language = 'en' | 'ar';
-export type ViewMode = 'admin' | 'spectator';
+
+/** RBAC: three-tier access control */
+export type AccessRole = 'admin' | 'public' | 'team';
+
 export type MatchStatus = 'upcoming' | 'live' | 'completed';
 export type BracketFormat = 'single' | 'double';
 export type TeamCapacity = 12 | 24 | 32;
+
+/** Tournament lifecycle */
+export type TournamentLifecycle = 'draft' | 'active' | 'completed';
 
 export interface Team {
   id: string;
   name: string;
   seed?: number;
-}
-
-export interface MatchScore {
-  teamA: number;
-  teamB: number;
 }
 
 export interface Match {
@@ -41,7 +42,7 @@ export interface Tournament {
   matches: Match[];
   createdAt: string;
   updatedAt: string;
-  status: 'draft' | 'active' | 'completed';
+  lifecycle: TournamentLifecycle;
 }
 
 export interface StandingsEntry {
@@ -54,4 +55,33 @@ export interface StandingsEntry {
   points: number;
 }
 
+/** Aggregated team stats across all tournaments */
+export interface TeamProfileStats {
+  teamName: string;
+  totalWins: number;
+  totalLosses: number;
+  totalDraws: number;
+  tournamentsPlayed: number;
+  matchHistory: TeamMatchRecord[];
+}
+
+export interface TeamMatchRecord {
+  tournamentId: string;
+  tournamentName: string;
+  round: number;
+  opponentName: string;
+  scoreFor: number;
+  scoreAgainst: number;
+  result: 'win' | 'loss' | 'draw';
+  date: string;
+}
+
 export type RoundLabel = 'Finals' | 'Semi-Finals' | 'Quarter-Finals' | 'Round of 16' | 'Round of 32';
+
+/** For the SearchBar */
+export interface SearchResult {
+  type: 'tournament' | 'team';
+  id: string;
+  label: string;
+  subtitle: string;
+}

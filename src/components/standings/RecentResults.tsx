@@ -4,7 +4,7 @@ import { useTournamentStore } from '@/lib/tournamentStore';
 import { useI18n } from '@/i18n';
 
 export default function RecentResults() {
-  const currentTournament = useTournamentStore((s) => s.currentTournament);
+  const currentTournament = useTournamentStore((s) => s.getActiveTournament());
   const { t } = useI18n();
 
   if (!currentTournament) return null;

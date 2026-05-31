@@ -1,12 +1,20 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useTournamentStore } from '@/lib/tournamentStore';
 import { useI18n } from '@/i18n';
+import { calculateStandings } from '@/lib/bracketEngine';
 
 export default function StandingsTable() {
   const currentTournament = useTournamentStore((s) => s.getActiveTournament());
-  const standings = useTournamentStore((s) => s.getStandings());
+  const matches = useTournamentStore((s) => s.getActiveTournament()?.matches ?? []);
+  const teams = useTournamentStore((s) => s.getActiveTournament()?.teams ?? []);
   const { t } = useI18n();
+
+  const standings = useMemo(
+    () => (currentTournament ? calculateStandings(currentTournament.teams, currentTournament.matches) : []),
+    [currentTournament?.id, matches.length, teams.length]
+  );
 
   if (!currentTournament) {
     return (

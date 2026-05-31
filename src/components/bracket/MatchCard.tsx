@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Match } from '@/types/tournament';
 import { useTournamentStore } from '@/lib/tournamentStore';
 import { useI18n } from '@/i18n';
+import { useRumble } from '@/hooks/useRumble';
 import StatusBadge from '@/components/shared/StatusBadge';
 
 interface Props {
@@ -44,6 +45,8 @@ export default function MatchCard({ match, isAdmin, index = 0 }: Props) {
   const winnerIsA = showWinner && match.winnerId === match.teamA?.id;
   const winnerIsB = showWinner && match.winnerId === match.teamB?.id;
 
+  const { buzz } = useRumble();
+
   // Confirm is available when both scores are filled and match is live/upcoming
   const bothPending = pendingA !== null && pendingB !== null;
   const hasChanges = pendingA !== match.scoreA || pendingB !== match.scoreB;
@@ -52,6 +55,7 @@ export default function MatchCard({ match, isAdmin, index = 0 }: Props) {
 
   const handleConfirm = () => {
     if (!canConfirm || pendingA === null || pendingB === null) return;
+    buzz('medium');
     confirmMatchScore(match.id, pendingA, pendingB);
     setSaved(true);
   };
@@ -162,7 +166,10 @@ export default function MatchCard({ match, isAdmin, index = 0 }: Props) {
           <div className="flex gap-2 mt-0.5">
             {isUpcoming && (
               <button
-                onClick={() => setMatchStatus(match.id, 'live')}
+                onClick={() => {
+                  buzz('medium');
+                  setMatchStatus(match.id, 'live');
+                }}
                 className="flex-1 text-xs py-2.5 px-3 rounded-xl
                   bg-tertiary-container/10 text-tertiary
                   hover:bg-tertiary-container/25 hover:shadow-md

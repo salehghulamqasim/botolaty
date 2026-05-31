@@ -9,13 +9,20 @@ export default function VisibilityToggle() {
   const accessRole = useTournamentStore((s) => s.accessRole);
   const { t } = useI18n();
 
+  const playLight = () => {
+    try { (navigator as any).vibrate?.(8); } catch {}
+  };
+
   if (!active || accessRole !== 'admin') return null;
 
   const isPublic = active.isPublic;
 
   return (
     <button
-      onClick={toggleVisibility}
+      onClick={() => {
+        playLight();
+        toggleVisibility();
+      }}
       className="flex items-center gap-2 px-3 py-2 bg-surface-container-high hover:bg-surface-bright border border-outline-variant rounded-lg text-on-surface-variant hover:text-primary transition-all duration-200"
       title={isPublic ? t.shared.makePrivate : t.shared.makePublic}
     >

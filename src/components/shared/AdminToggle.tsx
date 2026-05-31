@@ -3,11 +3,13 @@
 import { useTournamentStore } from '@/lib/tournamentStore';
 import { useI18n } from '@/i18n';
 import { AccessRole } from '@/types/tournament';
+import { useRumble } from '@/hooks/useRumble';
 import React from 'react';
 
 export default function AdminToggle() {
   const { accessRole, setAccessRole } = useTournamentStore();
   const { t } = useI18n();
+  const { buzz } = useRumble();
 
   const roles: { key: AccessRole; label: string; icon: React.ReactNode }[] = [
     {
@@ -45,7 +47,12 @@ export default function AdminToggle() {
       {roles.map(({ key, label, icon }) => (
         <button
           key={key}
-          onClick={() => setAccessRole(key)}
+          onClick={() => {
+            if (accessRole !== key) {
+              buzz('light');
+              setAccessRole(key);
+            }
+          }}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200
             ${accessRole === key
               ? 'bg-primary/20 text-primary shadow-sm'

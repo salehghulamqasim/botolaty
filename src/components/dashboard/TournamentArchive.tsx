@@ -3,28 +3,22 @@
 import { useMemo } from 'react';
 import { useTournamentStore } from '@/lib/tournamentStore';
 import { useI18n } from '@/i18n';
+import { useRumble } from '@/hooks/useRumble';
 import { TournamentLifecycle } from '@/types/tournament';
 
 export default function TournamentArchive() {
   const tournaments = useTournamentStore((s) => s.tournaments);
-  const accessRole = useTournamentStore((s) => s.accessRole);
   const activeTournamentId = useTournamentStore((s) => s.activeTournamentId);
   const setActiveTournament = useTournamentStore((s) => s.setActiveTournament);
   const updateTournamentStatus = useTournamentStore((s) => s.updateTournamentStatus);
   const deleteTournament = useTournamentStore((s) => s.deleteTournament);
   const { t } = useI18n();
+  const { buzz } = useRumble();
 
-  // Visibility filter — reactive to both tournaments and accessRole
-  const allTournaments = useMemo(() => {
-    if (accessRole === 'admin') return tournaments;
-    return tournaments.filter((t) => t.isPublic && t.lifecycle !== 'draft');
-  }, [tournaments, accessRole]);
+  const active = tournaments.filter((t) => t.lifecycle !== 'completed' && t.id !== activeTournamentId);
+  const archived = tournaments.filter((t) => t.lifecycle === 'completed');
 
-  const nonActive = allTournaments.filter((t) => t.id !== activeTournamentId);
-  const active = allTournaments.filter((t) => t.lifecycle !== 'completed');
-  const archived = allTournaments.filter((t) => t.lifecycle === 'completed');
-
-  if (allTournaments.length <= 1 && !activeTournamentId) return null;
+  if (tournaments.length === 0) return null;
 
   const lifecycleLabel = (lc: TournamentLifecycle) => {
     switch (lc) {
@@ -44,7 +38,6 @@ export default function TournamentArchive() {
 
   return (
     <div className="mt-10 space-y-6">
-      {/* Active Tournaments */}
       {active.length > 0 && (
         <div>
           <h3 className="text-sm font-bold text-on-surface-variant uppercase tracking-wider mb-3">
@@ -56,9 +49,18 @@ export default function TournamentArchive() {
                 key={tourney.id}
                 tourney={tourney}
                 isCurrent={tourney.id === activeTournamentId}
-                onOpen={() => setActiveTournament(tourney.id)}
-                onStatusChange={(lc) => updateTournamentStatus(tourney.id, lc)}
-                onDelete={() => deleteTournament(tourney.id)}
+                onOpen={() => {
+                  buzz('medium');
+                  setActiveTournament(tourney.id);
+                }}
+                onStatusChange={(next) => {
+                  buzz('heavy');
+                  updateTournamentStatus(tourney.id, next);
+                }}
+                onDelete={() => {
+                  buzz('heavy');
+                  deleteTournament(tourney.id);
+                }}
                 lifecycleLabel={lifecycleLabel}
                 lifecycleColor={lifecycleColor}
                 t={t}
@@ -68,7 +70,6 @@ export default function TournamentArchive() {
         </div>
       )}
 
-      {/* Archived Tournaments */}
       {archived.length > 0 && (
         <div>
           <h3 className="text-sm font-bold text-on-surface-variant uppercase tracking-wider mb-3">
@@ -80,9 +81,18 @@ export default function TournamentArchive() {
                 key={tourney.id}
                 tourney={tourney}
                 isCurrent={false}
-                onOpen={() => setActiveTournament(tourney.id)}
-                onStatusChange={(lc) => updateTournamentStatus(tourney.id, lc)}
-                onDelete={() => deleteTournament(tourney.id)}
+                onOpen={() => {
+                  buzz('medium');
+                  setActiveTournament(tourney.id);
+                }}
+                onStatusChange={(next) => {
+                  buzz('heavy');
+                  updateTournamentStatus(tourney.id, next);
+                }}
+                onDelete={() => {
+                  buzz('heavy');
+                  deleteTournament(tourney.id);
+                }}
                 lifecycleLabel={lifecycleLabel}
                 lifecycleColor={lifecycleColor}
                 t={t}
@@ -91,21 +101,19 @@ export default function TournamentArchive() {
           </div>
         </div>
       )}
-
-      {nonActive.length === 0 && (
-        <div className="text-center py-6 text-on-surface-variant/50 text-sm">
-          {t.dashboard.noArchives}
-        </div>
-      )}
     </div>
   );
 }
 
-function TournamentRow({
-  tourney, isCurrent, onOpen, onStatusChange, onDelete,
-  lifecycleLabel, lifecycleColor, t,
-}: {
-  tourney: ReturnType<typeof useTournamentStore.getState>['tournaments'][number];
+type Props = {
+  tourney: {
+    id: string;
+    name: string;
+    createdAt: string;
+    teams: { id: string; name: string }[];
+    capacity: number;
+    lifecycle: TournamentLifecycle;
+  };
   isCurrent: boolean;
   onOpen: () => void;
   onStatusChange: (lc: TournamentLifecycle) => void;
@@ -113,7 +121,9 @@ function TournamentRow({
   lifecycleLabel: (lc: TournamentLifecycle) => string;
   lifecycleColor: (lc: TournamentLifecycle) => string;
   t: any;
-}) {
+};
+
+function TournamentRow({ tourney, isCurrent, onOpen, onStatusChange, onDelete, lifecycleLabel, lifecycleColor, t }: Props) {
   return (
     <div className={`flex items-center gap-3 p-3 rounded-xl border transition-all
       ${isCurrent

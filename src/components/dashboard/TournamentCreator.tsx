@@ -5,9 +5,11 @@ import { useI18n } from '@/i18n';
 import { useTournamentStore } from '@/lib/tournamentStore';
 import { TeamCapacity, BracketFormat } from '@/types/tournament';
 import { useRouter } from 'next/navigation';
+import { useRumble } from '@/hooks/useRumble';
 
 export default function TournamentCreator() {
   const { t } = useI18n();
+  const { buzz } = useRumble();
   const router = useRouter();
   const createTournament = useTournamentStore((s) => s.createTournament);
 
@@ -22,6 +24,7 @@ export default function TournamentCreator() {
     if (trimmed && teams.length < capacity && !teams.includes(trimmed)) {
       setTeams([...teams, trimmed]);
       setNewTeam('');
+      buzz('light');
     }
   };
 
@@ -33,11 +36,13 @@ export default function TournamentCreator() {
   };
 
   const handleRemoveTeam = (index: number) => {
+    buzz('medium');
     setTeams(teams.filter((_, i) => i !== index));
   };
 
   const handleGenerate = () => {
     if (name.trim() && teams.length >= 2) {
+      buzz('heavy');
       createTournament(name.trim(), capacity, format, teams);
       router.push('/bracket');
     }
@@ -97,7 +102,10 @@ export default function TournamentCreator() {
                   {capacityOptions.map((c) => (
                     <button
                       key={c}
-                      onClick={() => setCapacity(c)}
+                      onClick={() => {
+                    buzz('medium');
+                    setCapacity(c);
+                  }}
                       className={`py-4 rounded-lg border text-xl font-extrabold font-[Sora] transition-all ${
                         capacity === c
                           ? 'border-primary bg-primary/10 text-primary shadow-[inset_0_0_12px_rgba(78,222,163,0.1)]'
@@ -117,7 +125,11 @@ export default function TournamentCreator() {
                 </label>
                 <div className="flex p-1 bg-surface-container-lowest border border-outline-variant/50 rounded-lg">
                   <button
-                    onClick={() => setFormat('single')}
+                    onClick={() => {
+                      const next = format === 'single' ? 'double' : 'single';
+                      buzz('medium');
+                      setFormat(next);
+                    }}
                     className={`flex-1 py-2 text-center rounded-md text-sm font-semibold transition-all ${
                       format === 'single'
                         ? 'bg-surface-container-high text-on-surface shadow-sm'
@@ -127,7 +139,11 @@ export default function TournamentCreator() {
                     {t.dashboard.singleElimination}
                   </button>
                   <button
-                    onClick={() => setFormat('double')}
+                    onClick={() => {
+                      const next = format === 'double' ? 'single' : 'double';
+                      buzz('medium');
+                      setFormat(next);
+                    }}
                     className={`flex-1 py-2 text-center rounded-md text-sm font-semibold transition-all ${
                       format === 'double'
                         ? 'bg-surface-container-high text-on-surface shadow-sm'
@@ -168,10 +184,13 @@ export default function TournamentCreator() {
                 onKeyDown={handleKeyDown}
                 maxLength={50}
               />
-              <button
-                onClick={handleAddTeam}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-primary hover:text-primary-fixed transition-colors disabled:opacity-30"
-                disabled={!newTeam.trim() || teams.length >= capacity}
+                <button
+                  onClick={() => {
+                    buzz('medium');
+                    handleAddTeam();
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-primary hover:text-primary-fixed transition-colors disabled:opacity-30"
+                  disabled={!newTeam.trim() || teams.length >= capacity}
               >
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />

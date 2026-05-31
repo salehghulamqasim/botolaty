@@ -4,16 +4,19 @@ import { useState } from 'react';
 import { useI18n } from '@/i18n';
 import { useTournamentStore } from '@/lib/tournamentStore';
 import LanguageToggle from '@/components/shared/LanguageToggle';
+import { useRumble } from '@/hooks/useRumble';
 
 export default function SettingsPage() {
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   const exportAllData = useTournamentStore((s) => s.exportAllData);
   const clearAllData = useTournamentStore((s) => s.clearAllData);
+  const { buzz } = useRumble();
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [cleared, setCleared] = useState(false);
   const [exported, setExported] = useState(false);
 
   const handleExport = () => {
+    buzz('light');
     const json = exportAllData();
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -27,6 +30,7 @@ export default function SettingsPage() {
   };
 
   const handleClear = () => {
+    buzz('medium');
     clearAllData();
     setShowClearConfirm(false);
     setCleared(true);
@@ -34,15 +38,46 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-5">
       {/* Header */}
       <div className="animate-slide-down">
         <h1 className="text-3xl md:text-4xl font-bold text-on-surface font-[Sora] tracking-tight">
           {t.settings.title}
         </h1>
-        <p className="mt-1 text-sm text-on-surface-variant">
+        <p className="mt-2 text-sm text-on-surface-variant font-medium">
           Manage your preferences and app data
         </p>
+      </div>
+
+      {/* App Info — compact premium card */}
+      <div className="relative overflow-hidden rounded-3xl bg-surface-container border border-outline-variant/30 shadow-sm">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 pointer-events-none" />
+        <div className="relative p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <h2 className="text-base font-extrabold text-on-surface font-[Sora] tracking-tight">
+                Botolaty
+              </h2>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-on-surface-variant">
+                <span className="font-semibold">v{t.app.version}</span>
+                <span className="text-outline-variant/70">·</span>
+                <span>Saleh Ghulam</span>
+              </div>
+            </div>
+            <div className="shrink-0 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-[11px] font-bold text-primary uppercase tracking-wider">
+              {t.settings.appInfo}
+            </div>
+          </div>
+
+          <div className="mt-4 h-px bg-gradient-to-r from-outline-variant/30 via-outline-variant/10 to-transparent" />
+
+          <div className="mt-4 flex flex-wrap gap-1.5">
+            <Pill label="Next.js 16" />
+            <Pill label="TypeScript" />
+            <Pill label="Tailwind v4" />
+            <Pill label="Zustand" />
+          </div>
+        </div>
       </div>
 
       {/* Language */}
@@ -55,38 +90,13 @@ export default function SettingsPage() {
           </svg>
         }
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
-              {lang === 'ar' ? t.settings.arabic : t.settings.english}
-            </span>
+        <div className="flex items-center justify-between gap-3">
+          <div className="space-y-0.5">
+            <p className="text-sm font-semibold text-on-surface">{t.settings.language}</p>
+            <p className="text-xs text-on-surface-variant">{t.settings.languageDesc}</p>
           </div>
-          <LanguageToggle />
-        </div>
-      </Section>
-
-      {/* App Info */}
-      <Section
-        title={t.settings.appInfo}
-        icon={
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693L5 14.5m14.8 0l2.272.286M5 14.5v-2.086c0-.76-.202-1.474-.555-2.104M5 12.414V9.75m0 0L2.728 9.464A2.25 2.25 0 001.5 11.25v2.086c0 .76.202 1.474.555 2.104M5 12.414l2.272.286M5 12.414l2.272-.286M5 14.5l2.272.286M12 18.75a.75.75 0 100-1.5.75.75 0 000 1.5z" />
-          </svg>
-        }
-      >
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <InfoBadge label={t.settings.version} value={t.app.version} />
-          <InfoBadge label={t.settings.developer} value="Saleh Ghulam" />
-        </div>
-        <div className="mt-4 space-y-1.5">
-          <p className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">
-            Tech Stack
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            <Pill label="Next.js 16" />
-            <Pill label="TypeScript" />
-            <Pill label="Tailwind v4" />
-            <Pill label="Zustand" />
+          <div className="shrink-0">
+            <LanguageToggle />
           </div>
         </div>
       </Section>
@@ -100,18 +110,18 @@ export default function SettingsPage() {
           </svg>
         }
       >
-        <div className="space-y-4">
+        <div className="space-y-3">
           {/* Export */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-xl bg-surface-container/60 border border-outline-variant/10">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3.5 rounded-2xl bg-surface-container/70 border border-outline-variant/10">
             <div className="space-y-0.5">
               <p className="text-sm font-semibold text-on-surface">{t.settings.exportData}</p>
               <p className="text-xs text-on-surface-variant">{t.settings.exportDataDesc}</p>
             </div>
             <button
               onClick={handleExport}
-              className="shrink-0 px-4 py-2 rounded-xl text-sm font-semibold
-                bg-surface-container-high hover:bg-primary/10
-                text-primary border border-primary/20 hover:border-primary/40
+              className="shrink-0 px-4 py-2.5 rounded-xl text-sm font-bold
+                bg-surface-container-high text-on-surface border border-outline-variant/30
+                hover:border-primary/40 hover:bg-primary/10 hover:text-primary
                 transition-all duration-200 active:scale-[0.97]
                 flex items-center gap-2 shadow-sm"
             >
@@ -123,16 +133,16 @@ export default function SettingsPage() {
           </div>
 
           {/* Clear data */}
-          <div className="p-3 rounded-xl bg-error/5 border border-error/10">
+          <div className="p-3.5 rounded-2xl bg-error/5 border border-error/10">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="space-y-0.5">
-                <p className="text-sm font-semibold text-error">{t.settings.clearData}</p>
+                <p className="text-sm font-bold text-error">{t.settings.clearData}</p>
                 <p className="text-xs text-on-surface-variant">{t.settings.clearDataDesc}</p>
               </div>
               {!showClearConfirm ? (
                 <button
                   onClick={() => setShowClearConfirm(true)}
-                  className="shrink-0 px-4 py-2 rounded-xl text-sm font-semibold
+                  className="shrink-0 px-4 py-2.5 rounded-xl text-sm font-bold
                     bg-error/10 text-error border border-error/20
                     hover:bg-error/20 hover:border-error/30
                     transition-all duration-200 active:scale-[0.97]"
@@ -144,13 +154,13 @@ export default function SettingsPage() {
                   <span className="text-xs text-error font-semibold">{t.settings.clearDataConfirm}</span>
                   <button
                     onClick={handleClear}
-                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-error text-white hover:bg-error/80 transition-colors shadow-sm"
+                    className="px-3.5 py-2 rounded-lg text-xs font-bold bg-error text-white hover:bg-error/80 transition-colors shadow-sm"
                   >
                     {t.settings.clearDataConfirmBtn}
                   </button>
                   <button
                     onClick={() => setShowClearConfirm(false)}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface-container text-on-surface-variant hover:bg-surface-container-high transition-colors"
+                    className="px-3.5 py-2 rounded-lg text-xs font-bold bg-surface-container text-on-surface-variant hover:bg-surface-container-high transition-colors"
                   >
                     {t.settings.clearDataCancel}
                   </button>
@@ -158,7 +168,7 @@ export default function SettingsPage() {
               )}
             </div>
             {cleared && (
-              <p className="text-xs text-success mt-2 font-medium animate-card-enter">
+              <p className="text-xs text-success mt-3 font-semibold animate-card-enter">
                 ✓ {t.settings.dataCleared}
               </p>
             )}
@@ -181,10 +191,10 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="p-5 rounded-2xl bg-surface-container-low border border-outline-variant/20 shadow-sm">
+    <div className="p-5 rounded-[20px] bg-surface-container-low border border-outline-variant/20 shadow-sm">
       <div className="flex items-center gap-2.5 mb-1">
         {icon && <span className="text-primary">{icon}</span>}
-        <h2 className="text-lg font-bold text-on-surface font-[Sora]">{title}</h2>
+        <h2 className="text-base font-bold text-on-surface font-[Sora]">{title}</h2>
       </div>
       {desc && <p className="text-sm text-on-surface-variant mb-4 ml-[28px]">{desc}</p>}
       <div className={desc ? '' : 'mt-4'}>{children}</div>
@@ -192,20 +202,9 @@ function Section({
   );
 }
 
-function InfoBadge({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="p-3 rounded-xl bg-surface-container/80 border border-outline-variant/10">
-      <p className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider mb-1">
-        {label}
-      </p>
-      <p className="text-sm font-bold text-on-surface">{value}</p>
-    </div>
-  );
-}
-
 function Pill({ label }: { label: string }) {
   return (
-    <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-primary/8 text-primary border border-primary/15">
+    <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20">
       {label}
     </span>
   );

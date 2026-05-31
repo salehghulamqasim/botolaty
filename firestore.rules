@@ -1,0 +1,25 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Tournament documents
+    match /tournaments/{tournamentId} {
+      // Public reads only if isPublic == true
+      allow read: if resource.data.isPublic == true;
+      // Mutations only by authenticated owner
+      allow create, update, delete: if request.auth != null 
+        && request.auth.uid == resource.data.adminId;
+    }
+    
+    // Match documents (subcollection)
+    match /tournaments/{tournamentId}/matches/{matchId} {
+      allow read: if get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.isPublic == true;
+      allow create, update, delete: if request.auth != null 
+        && get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.adminId == request.auth.uid;
+    }
+    
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

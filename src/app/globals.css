@@ -1,0 +1,177 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-surface-container: #171f33;
+  --color-surface: #0b1326;
+  --color-secondary: #adc6ff;
+  --color-primary-fixed: #6ffbbe;
+  --color-surface-container-low: #131b2e;
+  --color-primary: #4edea3;
+  --color-on-surface: #dae2fd;
+  --color-on-error: #690005;
+  --color-primary-container: #10b981;
+  --color-surface-bright: #31394d;
+  --color-on-primary-fixed-variant: #005236;
+  --color-error: #ffb4ab;
+  --color-on-secondary: #002e6a;
+  --color-on-primary-fixed: #002113;
+  --color-surface-dim: #0b1326;
+  --color-on-tertiary: #472a00;
+  --color-on-error-container: #ffdad6;
+  --color-on-background: #dae2fd;
+  --color-on-secondary-container: #e6ecff;
+  --color-error-container: #93000a;
+  --color-on-primary: #003824;
+  --color-inverse-on-surface: #283044;
+  --color-surface-container-high: #222a3d;
+  --color-outline: #86948a;
+  --color-on-primary-container: #00422b;
+  --color-tertiary-fixed-dim: #ffb95f;
+  --color-on-secondary-fixed-variant: #004395;
+  --color-background: #0b1326;
+  --color-tertiary-container: #e29100;
+  --color-outline-variant: #3c4a42;
+  --color-tertiary: #ffb95f;
+  --color-secondary-fixed-dim: #adc6ff;
+  --color-inverse-surface: #dae2fd;
+  --color-surface-container-highest: #2d3449;
+  --color-on-secondary-fixed: #001a42;
+  --color-surface-tint: #4edea3;
+  --color-inverse-primary: #006c49;
+  --color-surface-container-lowest: #060e20;
+  --color-tertiary-fixed: #ffddb8;
+  --color-on-tertiary-fixed-variant: #653e00;
+  --color-on-tertiary-fixed: #2a1700;
+  --color-on-tertiary-container: #523200;
+  --color-on-surface-variant: #bbcabf;
+  --color-surface-variant: #2d3449;
+  --color-secondary-container: #0566d9;
+  --color-primary-fixed-dim: #4edea3;
+  --color-secondary-fixed: #d8e2ff;
+
+  --font-sans: 'Inter', sans-serif;
+  --font-heading: 'Sora', sans-serif;
+  --font-arabic: 'Cairo', sans-serif;
+
+  --radius-DEFAULT: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-full: 9999px;
+}
+
+/* RTL overrides */
+[dir="rtl"] * {
+  --font-sans: 'Cairo', sans-serif;
+  --font-heading: 'Cairo', sans-serif;
+}
+
+[dir="rtl"] .material-symbols-outlined {
+  direction: ltr;
+}
+
+/* Base */
+body {
+  background-color: var(--color-background);
+  color: var(--color-on-background);
+  font-family: var(--font-sans);
+  min-height: 100dvh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #3c4a42;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #86948a;
+}
+
+/* Glass panel utility */
+.glass-panel {
+  background: rgba(23, 31, 51, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid #334155;
+}
+
+/* Emerald glow on hover */
+.emerald-glow {
+  transition: all 0.2s ease;
+}
+.emerald-glow:hover {
+  box-shadow: 0 0 16px rgba(78, 222, 163, 0.15);
+  border-color: #4edea3;
+}
+
+/* Live pulse */
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.pulse-live {
+  animation: pulse-live 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Bracket connector lines */
+.bracket-line {
+  border-color: #3c4a42;
+  border-style: solid;
+}
+.bracket-line.active {
+  border-color: #4edea3;
+  box-shadow: 0 0 8px rgba(78, 222, 163, 0.4);
+}
+
+/* Score input */
+.score-input {
+  background: var(--color-surface-container-highest);
+  border: 1px solid var(--color-outline-variant);
+  color: var(--color-on-surface);
+  text-align: center;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  border-radius: var(--radius-DEFAULT);
+  transition: border-color 0.2s;
+}
+.score-input:focus {
+  outline: none;
+  border-color: var(--color-secondary);
+  box-shadow: 0 0 0 1px rgba(173, 198, 255, 0.3);
+}
+
+/* Top accent bar */
+.card-accent {
+  position: relative;
+  overflow: hidden;
+}
+.card-accent::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, rgba(78, 222, 163, 0.5), transparent);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+/* Mobile card style for standings */
+@media (max-width: 767px) {
+  .standings-card {
+    background: var(--color-surface-container-low);
+    border: 1px solid rgba(60, 74, 66, 0.4);
+    border-radius: var(--radius-lg);
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+}

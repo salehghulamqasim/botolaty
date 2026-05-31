@@ -1,21 +1,26 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useTournamentStore } from '@/lib/tournamentStore';
 import { useI18n } from '@/i18n';
 import { SearchResult } from '@/types/tournament';
 
 export default function SearchBar() {
   const { t } = useI18n();
-  const tournaments = useTournamentStore((s) => s.getVisibleTournaments());
+  const tournaments = useTournamentStore((s) => s.tournaments);
+  const accessRole = useTournamentStore((s) => s.accessRole);
   const setActiveTournament = useTournamentStore((s) => s.setActiveTournament);
   const getAllTeamNames = useTournamentStore((s) => s.getAllTeamNames);
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
-  const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Close on outside click
+  // Visibility filter
+  const visibleTournaments = useMemo(() => {
+    if (accessRole === 'admin') return tournaments;
+    return tournaments.filter((t) => t.isPublic && t.lifecycle !== 'draft');
+  }, [tournaments, accessRole]);
+
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -29,13 +34,11 @@ export default function SearchBar() {
   const results: SearchResult[] = [];
   if (query.trim()) {
     const q = query.toLowerCase();
-    // Tournament matches
-    tournaments.forEach((t) => {
+    visibleTournaments.forEach((t) => {
       if (t.name.toLowerCase().includes(q)) {
         results.push({ type: 'tournament', id: t.id, label: t.name, subtitle: t.lifecycle });
       }
     });
-    // Team matches
     getAllTeamNames().forEach((name) => {
       if (name.toLowerCase().includes(q)) {
         results.push({ type: 'team', id: name, label: name, subtitle: t.team.profile });
@@ -72,7 +75,6 @@ export default function SearchBar() {
         )}
       </div>
 
-      {/* Dropdown */}
       {open && query.trim() && (
         <div className="absolute top-full mt-2 left-0 right-0 bg-surface-container-lowest border border-outline-variant/40 rounded-xl shadow-xl z-50 max-h-80 overflow-y-auto">
           {results.length === 0 ? (
@@ -88,7 +90,7 @@ export default function SearchBar() {
                     setActiveTournament(r.id);
                     window.location.href = '/bracket';
                   } else {
-                    setSelectedTeam(r.label);
+                    // Open team profile
                   }
                 }}
                 className="w-full text-left px-4 py-3 hover:bg-surface-container transition-colors flex items-center gap-3 border-b border-outline-variant/10 last:border-b-0"

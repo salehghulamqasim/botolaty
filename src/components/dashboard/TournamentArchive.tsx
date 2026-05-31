@@ -1,16 +1,24 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useTournamentStore } from '@/lib/tournamentStore';
 import { useI18n } from '@/i18n';
 import { TournamentLifecycle } from '@/types/tournament';
 
 export default function TournamentArchive() {
-  const allTournaments = useTournamentStore((s) => s.getVisibleTournaments());
+  const tournaments = useTournamentStore((s) => s.tournaments);
+  const accessRole = useTournamentStore((s) => s.accessRole);
   const activeTournamentId = useTournamentStore((s) => s.activeTournamentId);
   const setActiveTournament = useTournamentStore((s) => s.setActiveTournament);
   const updateTournamentStatus = useTournamentStore((s) => s.updateTournamentStatus);
   const deleteTournament = useTournamentStore((s) => s.deleteTournament);
   const { t } = useI18n();
+
+  // Visibility filter — reactive to both tournaments and accessRole
+  const allTournaments = useMemo(() => {
+    if (accessRole === 'admin') return tournaments;
+    return tournaments.filter((t) => t.isPublic && t.lifecycle !== 'draft');
+  }, [tournaments, accessRole]);
 
   const nonActive = allTournaments.filter((t) => t.id !== activeTournamentId);
   const active = allTournaments.filter((t) => t.lifecycle !== 'completed');
@@ -94,14 +102,8 @@ export default function TournamentArchive() {
 }
 
 function TournamentRow({
-  tourney,
-  isCurrent,
-  onOpen,
-  onStatusChange,
-  onDelete,
-  lifecycleLabel,
-  lifecycleColor,
-  t,
+  tourney, isCurrent, onOpen, onStatusChange, onDelete,
+  lifecycleLabel, lifecycleColor, t,
 }: {
   tourney: ReturnType<typeof useTournamentStore.getState>['tournaments'][number];
   isCurrent: boolean;
@@ -118,36 +120,30 @@ function TournamentRow({
         ? 'bg-primary/5 border-primary/25 shadow-sm shadow-primary/5'
         : 'bg-surface-container border-outline-variant/20 hover:border-outline-variant/40'}`}
     >
-      {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <span className="text-sm font-semibold text-on-surface truncate">{tourney.name}</span>
           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${lifecycleColor(tourney.lifecycle)}`}>
             {lifecycleLabel(tourney.lifecycle)}
           </span>
-          {isCurrent && (
-            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-          )}
+          {isCurrent && <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />}
         </div>
         <div className="text-xs text-on-surface-variant/70">
           {tourney.teams.length} {t.dashboard.teamsCount} · {tourney.capacity}-slot · {new Date(tourney.createdAt).toLocaleDateString()}
         </div>
       </div>
 
-      {/* Actions */}
       <div className="flex items-center gap-1.5 shrink-0">
         {!isCurrent && (
           <button
             onClick={onOpen}
             className="px-2.5 py-1.5 rounded-lg text-xs font-bold
-              bg-primary/10 text-primary hover:bg-primary/20
-              transition-colors"
+              bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
           >
             {t.dashboard.setActive}
           </button>
         )}
 
-        {/* Lifecycle toggle */}
         {tourney.lifecycle !== 'completed' ? (
           <button
             onClick={() => onStatusChange('completed')}
@@ -174,12 +170,10 @@ function TournamentRow({
           </button>
         )}
 
-        {/* Delete */}
         <button
           onClick={onDelete}
           className="px-2 py-1.5 rounded-lg text-xs font-semibold
-            text-on-surface-variant/40 hover:text-error hover:bg-error/5
-            transition-colors"
+            text-on-surface-variant/40 hover:text-error hover:bg-error/5 transition-colors"
           title={t.shared.delete}
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">

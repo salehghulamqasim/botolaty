@@ -10,8 +10,12 @@ import { Match } from '@/types/tournament';
 export default function BracketTree() {
   const currentTournament = useTournamentStore((s) => s.getActiveTournament());
   const accessRole = useTournamentStore((s) => s.accessRole);
-  const canView = useTournamentStore((s) => s.canViewActiveTournament());
   const { t } = useI18n();
+
+  // Route guard: private tournament
+  const canView = currentTournament
+    ? accessRole === 'admin' || (currentTournament.isPublic && currentTournament.lifecycle !== 'draft')
+    : true;
 
   // ─── Route guard: private tournament fallback ───
   if (currentTournament && !canView) {

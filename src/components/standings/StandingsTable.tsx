@@ -7,14 +7,17 @@ import { calculateStandings } from '@/lib/bracketEngine';
 
 export default function StandingsTable() {
   const currentTournament = useTournamentStore((s) => s.getActiveTournament());
-  const canView = useTournamentStore((s) => s.canViewActiveTournament());
-  const matches = useTournamentStore((s) => s.getActiveTournament()?.matches ?? []);
-  const teams = useTournamentStore((s) => s.getActiveTournament()?.teams ?? []);
+  const accessRole = useTournamentStore((s) => s.accessRole);
   const { t } = useI18n();
+
+  // Route guard
+  const canView = currentTournament
+    ? accessRole === 'admin' || (currentTournament.isPublic && currentTournament.lifecycle !== 'draft')
+    : true;
 
   const standings = useMemo(
     () => (currentTournament ? calculateStandings(currentTournament.teams, currentTournament.matches) : []),
-    [currentTournament?.id, matches.length, teams.length]
+    [currentTournament?.id, currentTournament?.matches?.length, currentTournament?.teams?.length]
   );
 
   if (!currentTournament) {

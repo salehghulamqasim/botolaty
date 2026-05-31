@@ -41,6 +41,10 @@ const en = {
     startsAt: 'Starts at',
     awaitingFinalists: 'Awaiting Finalists',
     winner: 'Winner',
+    bye: 'BYE',
+    start: 'Start',
+    finish: 'Finish',
+    allRounds: 'All',
     rounds: {
       finals: 'Grand Final',
       semifinals: 'Semi-Finals',

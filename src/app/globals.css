@@ -165,6 +165,68 @@ body {
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
 }
 
+/* ─── Card entrance animation (staggered) ─── */
+@keyframes card-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-card-enter {
+  animation: card-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ─── Header slide-down ─── */
+@keyframes slide-down {
+  0% {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-slide-down {
+  animation: slide-down 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ─── Card border pulse for live matches ─── */
+@keyframes card-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(78, 222, 163, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(78, 222, 163, 0);
+  }
+}
+.animate-card-pulse {
+  animation: card-pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ─── Shimmer gradient for live accent bar ─── */
+@keyframes shimmer {
+  0% { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+.animate-shimmer {
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+/* ─── Hide scrollbar but keep scroll ─── */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Mobile card style for standings */
 @media (max-width: 767px) {
   .standings-card {

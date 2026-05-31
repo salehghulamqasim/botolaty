@@ -43,6 +43,10 @@ const ar: Translations = {
     startsAt: 'يبدأ الساعة',
     awaitingFinalists: 'في انتظار المتأهلين',
     winner: 'الفائز',
+    bye: 'تأهل تلقائي',
+    start: 'ابدأ',
+    finish: 'إنهاء',
+    allRounds: 'الكل',
     rounds: {
       finals: 'النهائي الكبير',
       semifinals: 'نصف النهائي',

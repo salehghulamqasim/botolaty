@@ -197,22 +197,11 @@ export default function MatchCard({ match, isAdmin, index = 0 }: Props) {
           </div>
         )}
 
-        {/* BYE auto-advance */}
-        {hasBye && isAdmin && !isCompleted && (
-          <button
-            onClick={() => {
-              if (isByeA && match.teamB) confirmMatchScore(match.id, 0, 3);
-              else if (isByeB && match.teamA) confirmMatchScore(match.id, 3, 0);
-            }}
-            className="text-xs py-2 rounded-xl
-              bg-surface-container-highest/40 text-on-surface-variant
-              hover:bg-surface-container-highest hover:text-primary
-              active:scale-[0.97]
-              font-medium transition-all duration-200
-              border border-outline-variant/20 hover:border-primary/30"
-          >
-            {t.bracket.bye} — advance winner automatically
-          </button>
+        {/* BYE matches auto-completed at bracket generation — no manual action needed */}
+        {hasBye && isCompleted && (
+          <div className="text-center text-xs text-on-surface-variant/50 font-medium py-1">
+            ✓ {t.bracket.bye} — auto-advanced
+          </div>
         )}
       </div>
     </div>

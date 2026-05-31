@@ -7,7 +7,7 @@ import { SearchResult } from '@/types/tournament';
 
 export default function SearchBar() {
   const { t } = useI18n();
-  const tournaments = useTournamentStore((s) => s.tournaments);
+  const tournaments = useTournamentStore((s) => s.getVisibleTournaments());
   const setActiveTournament = useTournamentStore((s) => s.setActiveTournament);
   const getAllTeamNames = useTournamentStore((s) => s.getAllTeamNames);
   const [query, setQuery] = useState('');

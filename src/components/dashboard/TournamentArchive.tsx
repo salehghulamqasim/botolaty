@@ -5,7 +5,7 @@ import { useI18n } from '@/i18n';
 import { TournamentLifecycle } from '@/types/tournament';
 
 export default function TournamentArchive() {
-  const allTournaments = useTournamentStore((s) => s.tournaments);
+  const allTournaments = useTournamentStore((s) => s.getVisibleTournaments());
   const activeTournamentId = useTournamentStore((s) => s.activeTournamentId);
   const setActiveTournament = useTournamentStore((s) => s.setActiveTournament);
   const updateTournamentStatus = useTournamentStore((s) => s.updateTournamentStatus);

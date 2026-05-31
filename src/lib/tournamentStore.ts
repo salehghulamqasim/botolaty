@@ -22,6 +22,8 @@ interface TournamentState {
   getTournamentById: (id: string) => Tournament | undefined;
   getArchivedTournaments: () => Tournament[];
   getActiveTournaments: () => Tournament[];
+  getVisibleTournaments: () => Tournament[];
+  canViewActiveTournament: () => boolean;
 
   // ─── Access control actions ───
   setAccessRole: (role: AccessRole) => void;
@@ -80,6 +82,23 @@ export const useTournamentStore = create<TournamentState>()(
 
       getActiveTournaments: () => {
         return get().tournaments.filter((t) => t.lifecycle !== 'completed');
+      },
+
+      /** Visibility-filtered: admin sees all; public/team only isPublic + non-draft */
+      getVisibleTournaments: () => {
+        const { tournaments, accessRole } = get();
+        if (accessRole === 'admin') return tournaments;
+        return tournaments.filter((t) => t.isPublic && t.lifecycle !== 'draft');
+      },
+
+      /** Route guard: returns false if active tournament is hidden from current role */
+      canViewActiveTournament: () => {
+        const { tournaments, activeTournamentId, accessRole } = get();
+        if (accessRole === 'admin') return true;
+        if (!activeTournamentId) return true; // no active = nothing to block
+        const t = tournaments.find((t) => t.id === activeTournamentId);
+        if (!t) return true;
+        return t.isPublic && t.lifecycle !== 'draft';
       },
 
       // ─── Access control ───

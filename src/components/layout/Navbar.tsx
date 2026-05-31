@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useI18n } from '@/i18n';
@@ -12,6 +13,16 @@ export default function Navbar() {
   const { t } = useI18n();
   const pathname = usePathname();
 
+  const heavyClick = useCallback(() => {
+    try {
+      if ('vibrate' in navigator) {
+        navigator.vibrate(40);
+      }
+    } catch {
+      // no-op
+    }
+  }, []);
+
   const navItems = [
     { href: '/', label: t.nav.dashboard, icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
     { href: '/bracket', label: t.nav.brackets, icon: 'M10 3.22l-.66-.1a2 2 0 00-2.39 1.46l-2.57 7.72a2 2 0 00.34 1.7l5.28 7.92a2 2 0 002.54.67l7.72-2.57a2 2 0 001.46-2.39l-.1-.66M14 10l6 6m-6 0l6-6' },
@@ -23,7 +34,7 @@ export default function Navbar() {
       <div className="flex items-center justify-between px-4 md:px-12 w-full max-w-[1440px] mx-auto h-full gap-4">
         {/* Left: Logo + Nav */}
         <div className="flex items-center gap-6 shrink-0">
-          <Link href="/" className="flex items-center gap-2 group">
+          <Link href="/" onClick={heavyClick} className="flex items-center gap-2 group">
             <svg className="w-7 h-7 text-primary group-hover:text-primary-fixed transition-colors" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
             </svg>
@@ -40,6 +51,7 @@ export default function Navbar() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={heavyClick}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
                     isActive
                       ? 'text-primary bg-surface-container-high'
@@ -56,6 +68,7 @@ export default function Navbar() {
             {/* Settings nav link */}
             <Link
               href="/settings"
+              onClick={heavyClick}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
                 pathname === '/settings'
                   ? 'text-primary bg-surface-container-high'
